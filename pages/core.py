@@ -26,10 +26,10 @@ payload = {
     'upass': input2
 }
 
-target_file=open("e://hhh.txt",mode="w",encoding="utf-8")
+target_file=open("e://target.html",mode="w",encoding="utf-8")
 with session() as c:
     response=c.post('http://www.bv2008.cn/app/user/login.php?m=login',payload)
-    response = c.get('http://www.bv2008.cn/app/user/home.php')
+    response = c.get('http://www.bv2008.cn/app/sys/view.vol.php?type=hour&uid=15195276&p=2')
     #target_file.write(str(response.headers))
     target_file.write(str(response.text))
 target_file.close()
