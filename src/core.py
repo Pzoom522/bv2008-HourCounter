@@ -9,9 +9,31 @@ from Crypto.PublicKey import RSA
 from requests import session
 import counter
 
+def per_page_collector(page):#每页中的个人信息
+    global userDict
+    lineList=page.split('\n')#按行切分
+    startIndex=lineList.index('<th width="80">居住区域</th><th>申请时间</th><th>总时长</th><th>去年时长</th><th>今年时长</th>')+2
+    counter=0
+    while '<a target="_blank" href="/app/sys/view.vol.php?uid=' in lineList[startIndex+counter*15+4]:
+        info=lineList[startIndex+counter*15+4]
+        cut=info.index('">')
+        uid=info[51:cut]
+        if '<font color=green>' in info:#正常认证
+            name=info[cut+20:-15]
+        else:#认证无结果
+            name=info[cut+2:-8]
+        if name in userDict:#重名
+            userDict[name]='+'
+        else:
+            userDict[name]=uid
+        counter=counter+1
+    if counter>0:
+        return True
+    else:#空白页
+        return False
+    
 def per_page_counter(startDate,endDate,page):#每页中的有效时长
     pageTotal=0 #页内时长
-    #file=open("e://target.html",mode='r',encoding='utf-8')
     lineList=page.split('\n')#按行切分
     startIndex=lineList.index('<tr><th>服务项目</th><th width="80">服务时长</th><th width="80">添加方式</th><th width="80">状态</th><th width="150">日期</th></tr>')+1
     counter=0
@@ -27,19 +49,7 @@ def per_page_counter(startDate,endDate,page):#每页中的有效时长
         counter=counter+1
     return pageTotal
 
-def per_page_collector(page):#每页中的个人信息
-    global userDict
-    lineList=page.split('\n')#按行切分
-    startIndex=lineList.index('<th width="80">居住区域</th><th>申请时间</th><th>总时长</th><th>去年时长</th><th>今年时长</th>')+2
-    counter=0
-    while '<a target="_blank" href="/app/sys/view.vol.php?uid=' in lineList[startIndex+counter*15+4]:
-        info=lineList[startIndex+counter*15+4]
-        cut=info.index('"><font color=green>')
-        uid=info[51:cut]
-        name=info[cut+10:-10]
-        print(uid+' '+name+'\n')
-        counter=counter+1
-        
+
 def post_data_producer(username,password):
     
     key_bytes=b"-----BEGIN PUBLIC KEY-----\n\
@@ -66,31 +76,52 @@ def post_data_producer(username,password):
     }
     return payload
 
-input_file=open("../workplace/input.csv",mode='r',encoding='utf-8')
+input_file=open("..\workplace\input.csv",mode='r',encoding='utf-8')
+output_file=open("..\workplace\output.csv",mode='w',encoding='utf-8')
+print('============')
 print('----志愿北京团体成员时长统计平台----')
 print('powered by *Oynnl@BUAA1506*\n')
 uname=input('“志愿北京”团体帐号：')
 upass=input('“志愿北京”团体密码：')
 print('-------')
-startDate=input('请输入查询起点（YYYYMMDD）：')
-endDate=input('请输入查询终点（YYYYMMDD）：')
+startDate=int(input('请输入查询起点（YYYYMMDD）：'))
+endDate=int(input('请输入查询终点（YYYYMMDD）：'))
 
 userDict={}
-uid=30585826#67499882#15195276
+
 
 with session() as c:#保持会话状态
-    c.post('http://www.bv2008.cn/app/user/login.php?m=login',post_data_producer(uname,npass))#实现登陆
-    url='http://www.bv2008.cn/app/sys/view.vol.php?type=hour&uid='+str(uid)
-    totalHour=0
-    pageNo=1
-    while True:
-        response = c.get(url+'&p='+str(pageNo))
-        if per_page_counter(startDate,endDate,str(response.text))==0:
-            break
-        else:
-            totalHour=totalHour+per_page_counter(startDate,endDate,str(response.text))
-            pageNo=pageNo+1
-    print(totalHour)
-    #target_file.write(str(response.headers))
-    #target_file.write(str(response.text))
+    c.post('http://www.bv2008.cn/app/user/login.php?m=login',post_data_producer(uname,upass))#实现登陆
 
+    #建立字典：{姓名:uid}
+    response = c.get('http://www.bv2008.cn/app/org/member.php?&p=1')
+    pageNo=1
+    while per_page_collector(str(response.text)):
+        pageNo=pageNo+1
+        response = c.get('http://www.bv2008.cn/app/org/member.php?&p='+str(pageNo))
+
+    #逐个计算时长
+    name=input_file.readline().strip('\n')
+    while name:
+        if name in userDict:
+            if userDict[name]=='+':
+                output_file.write(name+','+'重名\n')
+            else:#常规情况
+                url='http://www.bv2008.cn/app/sys/view.vol.php?type=hour&uid='+userDict[name]
+                totalHour=0
+                pageNo=1
+                while True:#对每个人的时长页，逐页扫描
+                    response = c.get(url+'&p='+str(pageNo))
+                    if per_page_counter(startDate,endDate,str(response.text))==0:
+                        break
+                    else:
+                        totalHour=totalHour+per_page_counter(startDate,endDate,str(response.text))
+                        pageNo=pageNo+1
+                output_file.write(name+','+str(totalHour)+'\n')
+        else:
+            output_file.write(name+','+'暂未加入团体\n')
+        name=input_file.readline().strip('\n')
+        print(name)
+
+input_file.close()
+output_file.close()
