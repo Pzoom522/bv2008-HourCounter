@@ -103,6 +103,7 @@ with session() as c:#保持会话状态
     #逐个计算时长
     name=input_file.readline().strip('\n')
     while name:
+        print(name)
         if name in userDict:
             if userDict[name]=='+':
                 output_file.write(name+','+'重名\n')
@@ -121,7 +122,6 @@ with session() as c:#保持会话状态
         else:
             output_file.write(name+','+'暂未加入团体\n')
         name=input_file.readline().strip('\n')
-        print(name)
 
 input_file.close()
 output_file.close()
