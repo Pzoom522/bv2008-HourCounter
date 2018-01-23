@@ -7,7 +7,6 @@ from base64 import b64encode
 from Crypto.Cipher import PKCS1_v1_5 
 from Crypto.PublicKey import RSA
 from requests import session
-import counter
 
 def per_page_collector(page):#每页中的个人信息
     global userDict
