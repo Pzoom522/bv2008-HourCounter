@@ -75,8 +75,8 @@ def post_data_producer(username,password):
     }
     return payload
 
-input_file=open("..\workplace\input.csv",mode='r',encoding='utf-8')
-output_file=open("..\workplace\output.csv",mode='w',encoding='utf-8')
+input_file=open("../workplace/input.csv",mode='r',encoding='utf-8')
+output_file=open("../workplace/output.csv",mode='w',encoding='utf-8')
 print('============')
 print('----志愿北京团体成员时长统计平台----')
 print('powered by *Oynnl@BUAA1506*\n')
@@ -101,9 +101,13 @@ with session() as c:#保持会话状态
 
     #逐个计算时长
     name=input_file.readline().strip('\n')
-    while name:
+    if name[0]=='\ufeff':#BOM编码问题
+        print(name[1:])
+    else:
         print(name)
+    while name:
         if name in userDict:
+            print(name)
             if userDict[name]=='+':
                 output_file.write(name+','+'重名\n')
             else:#常规情况
