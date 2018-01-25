@@ -75,6 +75,27 @@ def post_data_producer(username,password):
     }
     return payload
 
+def result_loader(name):
+    global userDict
+    print(name)
+    if name in userDict:
+        if userDict[name]=='+':
+            return(name+',重名\n')
+        else:#常规情况
+            url='http://www.bv2008.cn/app/sys/view.vol.php?type=hour&uid='+userDict[name]
+            totalHour=0
+            pageNo=1
+            while True:#对每个人的时长页，逐页扫描
+                response = c.get(url+'&p='+str(pageNo))
+                if per_page_counter(startDate,endDate,str(response.text))==0:
+                    break
+                else:
+                    totalHour=totalHour+per_page_counter(startDate,endDate,str(response.text))
+                    pageNo=pageNo+1
+            return(name+','+str(totalHour)+'\n')
+    else:
+        return(name+',暂未加入团体\n')
+
 input_file=open("../workplace/input.csv",mode='r',encoding='utf-8')
 output_file=open("../workplace/output.csv",mode='w',encoding='utf-8')
 print('============')
@@ -99,31 +120,15 @@ with session() as c:#保持会话状态
         response = c.get('http://www.bv2008.cn/app/org/member.php?&p='+str(pageNo))
 
     #逐个计算时长
-    name=input_file.readline().strip('\n')
-    if name[0]=='\ufeff':#BOM编码问题
-        name=name[1:]
-        print(name)
-    else:
-        print(name)
+                   
+    name=input_file.readline().strip('\n')#开头
+    if name[0]=='\ufeff':
+        #开头有BOM编码，读取时需要去除
+        #但是打印时需要开头需要恢复，否则会出现乱码
+        output_file.write('\ufeff'+result_loader(name[1:]))
+        name=input_file.readline().strip('\n')
     while name:
-        if name in userDict:
-            print(name)
-            if userDict[name]=='+':
-                output_file.write(name+','+'重名\n')
-            else:#常规情况
-                url='http://www.bv2008.cn/app/sys/view.vol.php?type=hour&uid='+userDict[name]
-                totalHour=0
-                pageNo=1
-                while True:#对每个人的时长页，逐页扫描
-                    response = c.get(url+'&p='+str(pageNo))
-                    if per_page_counter(startDate,endDate,str(response.text))==0:
-                        break
-                    else:
-                        totalHour=totalHour+per_page_counter(startDate,endDate,str(response.text))
-                        pageNo=pageNo+1
-                output_file.write(name+','+str(totalHour)+'\n')
-        else:
-            output_file.write(name+','+'暂未加入团体\n')
+        output_file.write(result_loader(name))
         name=input_file.readline().strip('\n')
 
 input_file.close()
