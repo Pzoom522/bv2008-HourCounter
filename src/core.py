@@ -4,7 +4,7 @@
 # Powered by *Oynnl@BUAA1506*
 
 from base64 import b64encode
-from Crypto.Cipher import PKCS1_v1_5 
+from Crypto.Cipher import PKCS1_v1_5
 from Crypto.PublicKey import RSA
 from requests import session
 
@@ -30,7 +30,7 @@ def per_page_collector(page):#每页中的个人信息
         return True
     else:#空白页
         return False
-    
+
 def per_page_counter(startDate,endDate,page):#每页中的有效时长
     pageTotal=0 #页内时长
     lineList=page.split('\n')#按行切分
@@ -50,14 +50,14 @@ def per_page_counter(startDate,endDate,page):#每页中的有效时长
 
 
 def post_data_producer(username,password):
-    
+
     key_bytes=b"-----BEGIN PUBLIC KEY-----\n\
     MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCbJ2QYNdiFlzE0mcyq7tcZc5dP\n\
     vof6696l2cJJM8kOxeXT8EonfvLzfsEGmwjNp3gvAyF14LvqT6w7oH40sFFnX358\n\
     Eb+HZXx6CZ4LOkaTW0KNS6yodsRv0uwJhFMwREqEVbqd6jcCxTGKDOieendC8x1f\n\
     sg3Muagyfawc+o+tewIDAQAB\n\
     -----END PUBLIC KEY-----"
-    
+
     #生成Crypto.PublicKey.RSA._RSAobj类型的对象
     publickey=RSA.importKey(key_bytes)
     #构造“加密器”
@@ -88,7 +88,6 @@ endDate=int(input('请输入查询终点（YYYYMMDD）：'))
 
 userDict={}
 
-
 with session() as c:#保持会话状态
     c.post('http://www.bv2008.cn/app/user/login.php?m=login',post_data_producer(uname,upass))#实现登陆
 
@@ -102,7 +101,8 @@ with session() as c:#保持会话状态
     #逐个计算时长
     name=input_file.readline().strip('\n')
     if name[0]=='\ufeff':#BOM编码问题
-        print(name[1:])
+        name=name[1:]
+        print(name)
     else:
         print(name)
     while name:
